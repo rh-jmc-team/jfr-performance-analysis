@@ -1,0 +1,139 @@
+#!/usr/bin/bash
+
+# VARIABLES:
+# 
+# JFR_TESTS_DIR - The jfr-tests directory
+# TEST_PROGRAM - The fully qualified name of the test program to run
+# OPENJDK_DIR - The OpenJDK directory
+# GRAALVM_DIR - The GraalVM subdirectory in which to build and run the native image
+# FINAL_OUTPUT_FILE - The path to the file to store the results of this script
+
+
+# Variable checking
+
+if [[ -z "$JFR_TESTS_DIR" ]]; then
+    echo "Missing variable JFR_TESTS_DIR."
+    exit 1
+fi
+
+if [[ -z "$TEST_PROGRAM" ]]; then
+    echo "Missing variable TEST_PROGRAM."
+    exit 1
+fi
+
+if [[ -z "$OPENJDK_DIR" ]]; then
+    echo "Missing variable OPENJDK_DIR."
+    exit 1
+fi
+
+if [[ -z "$GRAALVM_DIR" ]]; then
+    echo "Missing variable GRAALVM_DIR."
+    exit 1
+fi
+
+if [[ -z "$FINAL_OUTPUT_FILE" ]]; then
+    FINAL_OUTPUT_FILE=results.txt
+fi
+
+echo > "$FINAL_OUTPUT_FILE"
+
+
+# Build OpenJDK
+
+cd "$OPENJDK_DIR"
+echo -n "OpenJDK commit: " >> "$FINAL_OUTPUT_FILE"
+git rev-parse HEAD >> "$FINAL_OUTPUT_FILE"
+bash configure --disable-warnings-as-errors
+make clean
+make images
+JAVA_HOME="$OPENJDK_DIR"
+
+
+# Build GraalVM
+
+cd "$GRAALVM_DIR"/substratevm
+echo -n "GraalVM commit: " >> "$FINAL_OUTPUT_FILE"
+git rev-parse HEAD >> "$FINAL_OUTPUT_FILE"
+mx clean && mx build
+
+
+# Compile jfr-tests with built OpenJDK
+
+cd "$JFR_TESTS_DIR"
+sed -i "s:<executable>/usr/lib/jvm/java-11-openjdk/bin/javac</executable>:<executable>$JAVA_HOME</executable>:" pom.xml
+mvn clean compile
+CLASSPATH="$JFR_TESTS_DIR/target/classes"
+
+
+# Build native image
+
+cd "$GRAALVM_DIR"/substratevm
+mx native-image -H:+AllowVMInspection -cp "$CLASSPATH" "$TEST_PROGRAM"
+echo -n "Native image size: " >> "$FINAL_OUTPUT_FILE"
+ls -l | grep "$TEST_PROGRAM" | awk '{print $5;}' >> "$FINAL_OUTPUT_FILE"
+echo >> "$FINAL_OUTPUT_FILE"
+
+
+# Function for running an OpenJDK test
+# $1 = iteration number of this test
+
+test_openjdk() {
+    OUTPUT_FILE="/tmp/OpenJDK_$1"
+    top -b | grep jdk/bin/java | grep -v grep >> "$OUTPUT_FILE" &
+    PID_TOP=$!
+    /usr/bin/time -f "%E\n%S\n%U" -ao "$OUTPUT_FILE" "$OPENJDK_DIR"/build/*/images/jdk/bin/java -cp "$JFR_TESTS" "$TEST_PROGRAM"
+    kill "$PID_TOP"
+}
+
+
+# Function for running an GraalVM test
+# $1 = iteration number of this test
+
+test_graalvm() {
+    OUTPUT_FILE="/tmp/GraalVM_$1"
+    top -b | grep substratevm | grep -v grep >> "$OUTPUT_FILE" &
+    PID_TOP=$!
+    /usr/bin/time -f "%E\n%S\n%U" -ao "$OUTPUT_FILE" "$GRAALVM_DIR"/substratevm/"$TEST_PROGRAM"
+    kill "$PID_TOP"
+}
+
+
+# Run the tests
+
+for i in {1..100}; do
+    test_openjdk($i)
+done
+
+
+for i in {1..100}; do
+    test_graalvm($i)
+done
+
+
+# Function for writing individual test output to the final output file
+# $1 = individual test output file
+
+write_output() {
+    OUTPUT_FILE=$1
+    awk -i inplace 'NF>=2 {print $(NF-1), $NF}' "$OUTPUT_FILE"
+    awk '{printf "%s,", $1}' "$OUTPUT_FILE" | awk '{print substr($0, 1, length($0)-1)}' >> "$FINAL_OUTPUT_FILE"
+    awk '{printf "%s,", $2}' "$OUTPUT_FILE" | awk '{print substr($0, 1, length($0)-1)}' >> "$FINAL_OUTPUT_FILE"
+    echo >> "$FINAL_OUTPUT_FILE"
+}
+
+
+# Write all the individual test outpouts to the final output file
+
+echo >> "$FINAL_OUTPUT_FILE"
+echo  "OpenJDK results" >> "$FINAL_OUTPUT_FILE"
+for i in {1..100}; do
+    write_output(/tmp/OpenJDK_$1)
+    echo >> "$FINAL_OUTPUT_FILE"
+done
+
+echo >> "$FINAL_OUTPUT_FILE"
+echo  "GraalVM results" >> "$FINAL_OUTPUT_FILE"
+for i in {1..100}; do
+    write_output(/tmp/GraalVM_$1)
+    echo >> "$FINAL_OUTPUT_FILE"
+done
