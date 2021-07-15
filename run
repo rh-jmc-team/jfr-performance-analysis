@@ -40,6 +40,7 @@ if [[ -z "$FINAL_OUTPUT_FILE" ]]; then
 fi
 
 echo -n > "$FINAL_OUTPUT_FILE"
+cp toprc ~/.config/procps
 
 
 # Build OpenJDK
