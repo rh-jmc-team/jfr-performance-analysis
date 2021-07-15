@@ -26,6 +26,10 @@ if [[ -z "$OPENJDK_DIR" ]]; then
     exit 1
 fi
 
+if [[ -z "$LABS_JDK_DIR" ]]; then
+    echo "Missing variable LABS_JDK_DIR."
+    exit 1
+
 if [[ -z "$GRAALVM_DIR" ]]; then
     echo "Missing variable GRAALVM_DIR."
     exit 1
@@ -46,7 +50,6 @@ git rev-parse HEAD >> "$FINAL_OUTPUT_FILE"
 bash configure --disable-warnings-as-errors
 make clean
 make images
-JAVA_HOME="$OPENJDK_DIR"
 
 
 # Build GraalVM
@@ -54,13 +57,15 @@ JAVA_HOME="$OPENJDK_DIR"
 cd "$GRAALVM_DIR"/substratevm
 echo -n "GraalVM commit: " >> "$FINAL_OUTPUT_FILE"
 git rev-parse HEAD >> "$FINAL_OUTPUT_FILE"
+export JAVA_HOME=$LABS_JDK_DIR
 mx clean && mx build
 
 
 # Compile jfr-tests with built OpenJDK
 
 cd "$JFR_TESTS_DIR"
-sed -i "s:<executable>/usr/lib/jvm/java-11-openjdk/bin/javac</executable>:<executable>$JAVA_HOME</executable>:" pom.xml
+JAVAC="$OPENJDK_DIR/build//linux-x86_64-normal-server-release/images/jdk/bin/javac"
+sed -i "s:<executable>.*</executable>:<executable>$JAVAC</executable>:" pom.xml
 mvn clean compile
 CLASSPATH="$JFR_TESTS_DIR/target/classes"
 
