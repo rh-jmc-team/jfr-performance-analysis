@@ -88,7 +88,7 @@ test_openjdk() {
     OUTPUT_FILE="/tmp/OpenJDK_$1"
     top -b | grep jdk/bin/java | grep -v grep > "$OUTPUT_FILE" &
     PID_TOP=$!
-    /usr/bin/time -f "\n%E,%S,%U" -ao "$OUTPUT_FILE" $JAVA -cp "$JFR_TESTS" "$TEST_PROGRAM"
+    /usr/bin/time -f "\n%E,%S,%U" -ao "$OUTPUT_FILE" "$JAVA" -cp "$JFR_TESTS" "$TEST_PROGRAM"
     kill "$PID_TOP"
 }
 
@@ -111,7 +111,6 @@ for i in {1..100}; do
     test_openjdk $i
 done
 
-
 for i in {1..100}; do
     test_graalvm $i
 done
@@ -125,7 +124,7 @@ write_output() {
     TEMP=/tmp/write_output
     echo "$OUTPUT_FILE" >> "$FINAL_OUTPUT_FILE"
     tail -n 1 "$OUTPUT_FILE" >> "$FINAL_OUTPUT_FILE"
-    awk 'NF>=3 {print $(NF-1), $NF}' "$OUTPUT_FILE" > $TEMP
+    awk 'NF>=3 {print $(NF-1), $NF}' "$OUTPUT_FILE" > "$TEMP"
     awk '{printf "%s,", $1}' "$TEMP" | awk '{print substr($0, 1, length($0)-1)}' >> "$FINAL_OUTPUT_FILE"
     awk '{printf "%s,", $2}' "$TEMP" | awk '{print substr($0, 1, length($0)-1)}' >> "$FINAL_OUTPUT_FILE"
     echo >> "$FINAL_OUTPUT_FILE"
