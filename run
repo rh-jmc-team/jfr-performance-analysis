@@ -77,7 +77,7 @@ CLASSPATH="$JFR_TESTS_DIR/target/classes"
 cd "$GRAALVM_DIR"/substratevm
 mx native-image -H:+AllowVMInspection -cp "$CLASSPATH" "$TEST_PROGRAM" "$TEST_PROGRAM"
 echo -n "Native image size: " >> "$FINAL_OUTPUT_FILE"
-ls -l | grep "$TEST_PROGRAM\$" | awk '{print $5;}' >> "$FINAL_OUTPUT_FILE"
+ls -l | grep " $TEST_PROGRAM\$" | awk '{print $5;}' >> "$FINAL_OUTPUT_FILE"
 echo >> "$FINAL_OUTPUT_FILE"
 
 
