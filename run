@@ -11,11 +11,6 @@
 
 # Variable checking
 
-if [[ -z "$JFR_TESTS_DIR" ]]; then
-    echo "Missing variable JFR_TESTS_DIR."
-    exit 1
-fi
-
 if [[ -z "$TEST_PROGRAM" ]]; then
     echo "Missing variable TEST_PROGRAM."
     exit 1
@@ -33,11 +28,15 @@ if [[ -z "$FINAL_OUTPUT_FILE" ]]; then
     FINAL_OUTPUT_FILE="$(pwd)/results.txt"
 fi
 
+
+# Setup
+
 echo -n > "$FINAL_OUTPUT_FILE"
 cp toprc ~/.config/procps
 
-mkdir build
-cd build
+BUILD="$(pwd)/build"
+mkdir "$BUILD"
+cd "$BUILD"
 
 
 # Download OpenJDK
@@ -59,9 +58,11 @@ tar xf graalvm.tar.gz -C "$GRAALVM_HOME" --strip-components=1
 "$GRAALVM_HOME"/bin/gu install native-image
 
 
-# Compile jfr-tests with built OpenJDK
+# Download and compile jfr-tests
 
-cd "$JFR_TESTS_DIR"
+git clone https://github.com/rh-jmc-team/jfr-tests.git
+JFR_TESTS="$(pwd)/jfr-tests"
+cd "$JFR_TESTS"
 sed -i "s:<executable>.*</executable>:<executable>$JAVAC</executable>:" pom.xml
 mvn clean compile
 CLASSPATH="$JFR_TESTS_DIR/target/classes"
