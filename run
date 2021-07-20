@@ -1,5 +1,8 @@
 #!/usr/bin/bash
 
+# RUN THIS COMMAND FIRST:
+# dnf install git tar maven gcc glibc-devel zlib-devel time
+#
 # VARIABLES:
 # 
 # TEST_PROGRAM - The fully qualified name of the test program to run
@@ -23,19 +26,19 @@ if [[ -z "$GRAALVM_URL" ]]; then
     GRAALVM_URL="https://github.com/graalvm/graalvm-ce-dev-builds/releases/download/21.3.0-dev-20210719_2130/graalvm-ce-java11-linux-amd64-dev.tar.gz"
 fi
 
-if [[ -z "$FINAL_OUTPUT_FILE" ]]; then
-    FINAL_OUTPUT_FILE="$(pwd)/results.txt"
-fi
-
 
 # Setup
 
-echo -n > "$FINAL_OUTPUT_FILE"
+mkdir -p ~/.config/procps
 cp toprc ~/.config/procps
 
-BUILD="$(pwd)/build"
-mkdir "$BUILD"
-cd "$BUILD"
+mkdir build
+cd build
+
+if [[ -z "$FINAL_OUTPUT_FILE" ]]; then
+    FINAL_OUTPUT_FILE="$(pwd)/results.txt"
+fi
+echo -n > "$FINAL_OUTPUT_FILE"
 
 
 # Download OpenJDK
@@ -51,7 +54,7 @@ JAVAC="$JAVA_HOME/bin/javac"
 # Download GraalVM
 
 curl -sL "$GRAALVM_URL" -o graalvm.tar.gz
-GRAALVM_HOME="$(pwd)/graal"
+GRAALVM_HOME="$(pwd)/graalvm"
 mkdir "$GRAALVM_HOME"
 tar xf graalvm.tar.gz -C "$GRAALVM_HOME" --strip-components=1
 "$GRAALVM_HOME"/bin/gu install native-image
@@ -60,17 +63,16 @@ tar xf graalvm.tar.gz -C "$GRAALVM_HOME" --strip-components=1
 # Download and compile jfr-tests
 
 git clone https://github.com/rh-jmc-team/jfr-tests.git
-JFR_TESTS="$(pwd)/jfr-tests"
-cd "$JFR_TESTS"
+cd jfr-tests
 sed -i "s:<executable>.*</executable>:<executable>$JAVAC</executable>:" pom.xml
 mvn clean compile
-CLASSPATH="$JFR_TESTS_DIR/target/classes"
+CLASSPATH="$(pwd)/target/classes"
+cd ..
 
 
-# Build native image
+# Build the native image
 
-cd "$GRAALVM_DIR"/substratevm
-mx native-image -H:+AllowVMInspection -cp "$CLASSPATH" "$TEST_PROGRAM" "$TEST_PROGRAM"
+"$GRAALVM_HOME"/bin/native-image -H:+AllowVMInspection -cp "$CLASSPATH" "$TEST_PROGRAM" "$TEST_PROGRAM"
 echo -n "Native image size: " >> "$FINAL_OUTPUT_FILE"
 ls -l | grep " $TEST_PROGRAM\$" | awk '{print $5;}' >> "$FINAL_OUTPUT_FILE"
 echo >> "$FINAL_OUTPUT_FILE"
@@ -83,7 +85,7 @@ test_openjdk() {
     OUTPUT_FILE="/tmp/OpenJDK_$1"
     top -b | grep jdk/bin/java | grep -v grep > "$OUTPUT_FILE" &
     PID_TOP="$!"
-    /usr/bin/time -f "\n%E,%S,%U" -ao "$OUTPUT_FILE" "$JAVA" -cp "$JFR_TESTS" "$TEST_PROGRAM"
+    /usr/bin/time -f "\n%E,%S,%U" -ao "$OUTPUT_FILE" "$JAVA" -cp "$CLASSPATH" "$TEST_PROGRAM"
     kill "$PID_TOP"
 }
 
@@ -93,9 +95,9 @@ test_openjdk() {
 
 test_graalvm() {
     OUTPUT_FILE="/tmp/GraalVM_$1"
-    top -b | grep substratevm | grep -v grep > "$OUTPUT_FILE" &
+    top -b | grep "./$TEST_PROGRAM" | grep -v grep > "$OUTPUT_FILE" &
     PID_TOP="$!"
-    /usr/bin/time -f "\n%E,%S,%U" -ao "$OUTPUT_FILE" "$GRAALVM_DIR"/substratevm/"$TEST_PROGRAM" -XX:+FlightRecorder
+    /usr/bin/time -f "\n%E,%S,%U" -ao "$OUTPUT_FILE" "./$TEST_PROGRAM" -XX:+FlightRecorder
     kill "$PID_TOP"
 }
 
@@ -130,6 +132,7 @@ write_output() {
 
 echo >> "$FINAL_OUTPUT_FILE"
 echo  "OpenJDK results" >> "$FINAL_OUTPUT_FILE"
+echo >> "$FINAL_OUTPUT_FILE"
 for i in {1..100}; do
     write_output /tmp/OpenJDK_$i
     echo >> "$FINAL_OUTPUT_FILE"
@@ -137,6 +140,7 @@ done
 
 echo >> "$FINAL_OUTPUT_FILE"
 echo  "GraalVM results" >> "$FINAL_OUTPUT_FILE"
+echo >> "$FINAL_OUTPUT_FILE"
 for i in {1..100}; do
     write_output /tmp/GraalVM_$i
     echo >> "$FINAL_OUTPUT_FILE"
