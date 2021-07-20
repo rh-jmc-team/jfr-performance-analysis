@@ -2,10 +2,9 @@
 
 # VARIABLES:
 # 
-# JFR_TESTS_DIR - The jfr-tests directory
 # TEST_PROGRAM - The fully qualified name of the test program to run
-# OPENJDK_DIR - The OpenJDK directory
-# GRAALVM_DIR - The GraalVM subdirectory in which to build and run the native image
+# OPENJDK_URL - The URL to a pre-build OpenJDK
+# GRAALVM_DIR - The URL to a pre-build GraalVM
 # FINAL_OUTPUT_FILE - The path to the file to store the results of this script
 
 
