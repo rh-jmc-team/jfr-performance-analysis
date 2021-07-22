@@ -32,7 +32,6 @@ fi
 mkdir -p ~/.config/procps
 cp toprc ~/.config/procps
 
-rm -rf build
 mkdir build
 cd build
 
@@ -104,16 +103,13 @@ test_graalvm() {
 
 
 # Run the tests
-# Remove recordings aftere, to save space
 
 for i in {1..100}; do
     test_openjdk $i
-    rm /tmp/*.jfr
 done
 
 for i in {1..100}; do
     test_graalvm $i
-    rm /tmp/*.jfr
 done
 
 
@@ -124,15 +120,13 @@ write_output() {
     OUTPUT_FILE=$1
     INTERMEDIATE="$OUTPUT_FILE"_INTERMEDIATE
     echo "$OUTPUT_FILE" >> "$FINAL_OUTPUT_FILE"
-    echo -n "," >> "$FINAL_OUTPUT_FILE"
     tail -n 1 "$OUTPUT_FILE" >> "$FINAL_OUTPUT_FILE"
     awk 'NF>=3 {print $(NF-1), $NF}' "$OUTPUT_FILE" > "$INTERMEDIATE"
-    # The last line top outputs is always incomplete for some reason, so we filter for the CPU and memory usage format
+    # The last line top outputs is always incomplete for some reason, so we filter for only numbers
     awk -i inplace '/^[0-9]+(\.[0-9]+)? [0-9]+(\.[0-9]+)?$/ {print $0}' "$INTERMEDIATE"
-    echo -n "," >> "$FINAL_OUTPUT_FILE"
     awk '{printf "%s,", $1}' "$INTERMEDIATE" | awk '{print substr($0, 1, length($0)-1)}' >> "$FINAL_OUTPUT_FILE"
-    echo -n "," >> "$FINAL_OUTPUT_FILE"
     awk '{printf "%s,", $2}' "$INTERMEDIATE" | awk '{print substr($0, 1, length($0)-1)}' >> "$FINAL_OUTPUT_FILE"
+    echo >> "$FINAL_OUTPUT_FILE"
 }
 
 
@@ -153,5 +147,3 @@ for i in {1..100}; do
     write_output /tmp/GraalVM_$i
     echo >> "$FINAL_OUTPUT_FILE"
 done
-
-sed -i '$d' $FINAL_OUTPUT_FILE
