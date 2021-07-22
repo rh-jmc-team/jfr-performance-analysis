@@ -124,11 +124,14 @@ write_output() {
     OUTPUT_FILE=$1
     INTERMEDIATE="$OUTPUT_FILE"_INTERMEDIATE
     echo "$OUTPUT_FILE" >> "$FINAL_OUTPUT_FILE"
+    echo -n "," >> "$FINAL_OUTPUT_FILE"
     tail -n 1 "$OUTPUT_FILE" >> "$FINAL_OUTPUT_FILE"
     awk 'NF>=3 {print $(NF-1), $NF}' "$OUTPUT_FILE" > "$INTERMEDIATE"
-    # The last line top outputs is always incomplete for some reason, so we filter for only numbers
+    # The last line top outputs is always incomplete for some reason, so we filter for the CPU and memory usage format
     awk -i inplace '/^[0-9]+(\.[0-9]+)? [0-9]+(\.[0-9]+)?$/ {print $0}' "$INTERMEDIATE"
+    echo -n "," >> "$FINAL_OUTPUT_FILE"
     awk '{printf "%s,", $1}' "$INTERMEDIATE" | awk '{print substr($0, 1, length($0)-1)}' >> "$FINAL_OUTPUT_FILE"
+    echo -n "," >> "$FINAL_OUTPUT_FILE"
     awk '{printf "%s,", $2}' "$INTERMEDIATE" | awk '{print substr($0, 1, length($0)-1)}' >> "$FINAL_OUTPUT_FILE"
 }
 
