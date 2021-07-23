@@ -2,13 +2,6 @@
 
 # RUN THIS COMMAND FIRST:
 # dnf install git tar maven gcc glibc-devel zlib-devel time
-#
-# VARIABLES:
-# 
-# TEST_PROGRAM - The fully qualified name of the test program to run
-# OPENJDK_URL - The URL to a pre-build OpenJDK
-# GRAALVM_DIR - The URL to a pre-build GraalVM
-# FINAL_OUTPUT_FILE - The path to the file to store the results of this script
 
 
 # Variable checking
@@ -35,11 +28,22 @@ cp toprc ~/.config/procps
 rm -rf build
 mkdir build
 cd build
+mkdir results
 
-if [[ -z "$FINAL_OUTPUT_FILE" ]]; then
-    FINAL_OUTPUT_FILE="$(pwd)/results.txt"
-fi
-echo -n > "$FINAL_OUTPUT_FILE"
+export OPENJDK_CPU="$(pwd)/results/OpenJDK_CPU"
+export OPENJDK_RES="$(pwd)/results/OpenJDK_RES"
+export OPENJDK_TIME="$(pwd)/results/OpenJDK_TIME"
+export GRAALVM_CPU="$(pwd)/results/GraalVM_CPU"
+export GRAALVM_RES="$(pwd)/results/GraalVM_RES"
+export GRAALVM_TIME="$(pwd)/results/GraalVM_TIME"
+export GRAALVM_SIZE="$(pwd)/results/GraalVM_SIZE"
+touch "$OPENJDK_CPU"
+touch "$OPENJDK_RES"
+touch "$OPENJDK_TIME"
+touch "$GRAALVM_CPU"
+touch "$GRAALVM_RES"
+touch "$GRAALVM_TIME"
+touch "$GRAALVM_SIZE"
 
 
 # Download OpenJDK
@@ -74,9 +78,7 @@ cd ..
 # Build the native image
 
 "$GRAALVM_HOME"/bin/native-image -H:+AllowVMInspection -cp "$CLASSPATH" "$TEST_PROGRAM" "$TEST_PROGRAM"
-echo -n "Native image size: " >> "$FINAL_OUTPUT_FILE"
-ls -l | grep " $TEST_PROGRAM\$" | awk '{print $5;}' >> "$FINAL_OUTPUT_FILE"
-echo >> "$FINAL_OUTPUT_FILE"
+ls -l | grep " $TEST_PROGRAM\$" | awk '{print $5;}' > "$GRAALVM_SIZE"
 
 
 # Function for running an OpenJDK test
@@ -117,41 +119,41 @@ for i in {1..100}; do
 done
 
 
-# Function for writing individual test output to the final output file
+# Function for parsing the individual OpenJDK output files and writing them to the final output files
 # $1 = individual test output file
 
-write_output() {
+parse_openjdk() {
     OUTPUT_FILE=$1
     INTERMEDIATE="$OUTPUT_FILE"_INTERMEDIATE
-    echo "$OUTPUT_FILE" >> "$FINAL_OUTPUT_FILE"
-    echo -n "," >> "$FINAL_OUTPUT_FILE"
-    tail -n 1 "$OUTPUT_FILE" >> "$FINAL_OUTPUT_FILE"
+    tail -n 1 "$OUTPUT_FILE" >> "$OPENJDK_TIME"
     awk 'NF>=3 {print $(NF-1), $NF}' "$OUTPUT_FILE" > "$INTERMEDIATE"
     # The last line top outputs is always incomplete for some reason, so we filter for the CPU and memory usage format
     awk -i inplace '/^[0-9]+(\.[0-9]+)? [0-9]+(\.[0-9]+)?$/ {print $0}' "$INTERMEDIATE"
-    echo -n "," >> "$FINAL_OUTPUT_FILE"
-    awk '{printf "%s,", $1}' "$INTERMEDIATE" | awk '{print substr($0, 1, length($0)-1)}' >> "$FINAL_OUTPUT_FILE"
-    echo -n "," >> "$FINAL_OUTPUT_FILE"
-    awk '{printf "%s,", $2}' "$INTERMEDIATE" | awk '{print substr($0, 1, length($0)-1)}' >> "$FINAL_OUTPUT_FILE"
+    awk '{printf "%s,", $1}' "$INTERMEDIATE" | awk '{print substr($0, 1, length($0)-1)}' >> "$OPENJDK_CPU"
+    awk '{printf "%s,", $2}' "$INTERMEDIATE" | awk '{print substr($0, 1, length($0)-1)}' >> "$OPENJDK_RES"
+}
+
+# Function for parsing the individual GraalVM output files and writing them to the final output files
+# $1 = individual test output file
+
+parse_graalvm() {
+    OUTPUT_FILE=$1
+    INTERMEDIATE="$OUTPUT_FILE"_INTERMEDIATE
+    tail -n 1 "$OUTPUT_FILE" >> "$GRAALVM_TIME"
+    awk 'NF>=3 {print $(NF-1), $NF}' "$OUTPUT_FILE" > "$INTERMEDIATE"
+    # The last line top outputs is always incomplete for some reason, so we filter for the CPU and memory usage format
+    awk -i inplace '/^[0-9]+(\.[0-9]+)? [0-9]+(\.[0-9]+)?$/ {print $0}' "$INTERMEDIATE"
+    awk '{printf "%s,", $1}' "$INTERMEDIATE" | awk '{print substr($0, 1, length($0)-1)}' >> "$GRAALVM_CPU"
+    awk '{printf "%s,", $2}' "$INTERMEDIATE" | awk '{print substr($0, 1, length($0)-1)}' >> "$GRAALVM_RES"
 }
 
 
-# Write all the individual test outputs to the final output file
+# parse all the individual test results
 
-echo >> "$FINAL_OUTPUT_FILE"
-echo  "OpenJDK results" >> "$FINAL_OUTPUT_FILE"
-echo >> "$FINAL_OUTPUT_FILE"
 for i in {1..100}; do
-    write_output /tmp/OpenJDK_$i
-    echo >> "$FINAL_OUTPUT_FILE"
+    parse_openjdk /tmp/OpenJDK_$i
 done
 
-echo >> "$FINAL_OUTPUT_FILE"
-echo  "GraalVM results" >> "$FINAL_OUTPUT_FILE"
-echo >> "$FINAL_OUTPUT_FILE"
 for i in {1..100}; do
-    write_output /tmp/GraalVM_$i
-    echo >> "$FINAL_OUTPUT_FILE"
+    parse_graalvm /tmp/OpenJDK_$i
 done
-
-sed -i '$d' $FINAL_OUTPUT_FILE
