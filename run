@@ -28,6 +28,7 @@ cp toprc ~/.config/procps
 rm -rf build
 mkdir build
 cd build
+rm -rf results
 mkdir results
 
 export OPENJDK_CPU="$(pwd)/results/OpenJDK_CPU"
@@ -87,9 +88,11 @@ ls -l | grep " $TEST_PROGRAM\$" | awk '{print $5;}' > "$GRAALVM_SIZE"
 test_openjdk() {
     OUTPUT_FILE="/tmp/OpenJDK_$1"
     top -b | grep "jdk/bin/java" | grep -v "usr/bin/time" | grep -v "grep" > "$OUTPUT_FILE" &
-    PID_TOP="$!"
-    /usr/bin/time -f "\n%E,%S,%U" -ao "$OUTPUT_FILE" "$JAVA" -cp "$CLASSPATH" "$TEST_PROGRAM"
-    kill "$PID_TOP"
+    LAST_GREP=$!
+    /usr/bin/time -f "\n%E,%S,%U" -o "/tmp/time" "$JAVA" -cp "$CLASSPATH" "$TEST_PROGRAM"
+    killall top
+    wait $LAST_GREP
+    tail -n 1 "/tmp/time" >> "$OUTPUT_FILE"
 }
 
 
@@ -99,9 +102,11 @@ test_openjdk() {
 test_graalvm() {
     OUTPUT_FILE="/tmp/GraalVM_$1"
     top -b | grep "./$TEST_PROGRAM" | grep -v "usr/bin/time" | grep -v "grep" > "$OUTPUT_FILE" &
-    PID_TOP="$!"
-    /usr/bin/time -f "\n%E,%S,%U" -ao "$OUTPUT_FILE" "./$TEST_PROGRAM" -XX:+FlightRecorder
-    kill "$PID_TOP"
+    LAST_GREP=$!
+    /usr/bin/time -f "\n%E,%S,%U" -o "/tmp/time" "./$TEST_PROGRAM" -XX:+FlightRecorder
+    killall top
+    wait $LAST_GREP
+    tail -n 1 "/tmp/time" >> "$OUTPUT_FILE"
 }
 
 
@@ -155,5 +160,5 @@ for i in {1..100}; do
 done
 
 for i in {1..100}; do
-    parse_graalvm /tmp/OpenJDK_$i
+    parse_graalvm /tmp/GraalVM_$i
 done
