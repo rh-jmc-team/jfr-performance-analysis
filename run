@@ -86,7 +86,7 @@ ls -l | grep " $TEST_PROGRAM\$" | awk '{print $5;}' > "$GRAALVM_SIZE"
 
 test_openjdk() {
     OUTPUT_FILE="/tmp/OpenJDK_$1"
-    top -b | grep jdk/bin/java | grep -v grep > "$OUTPUT_FILE" &
+    top -b | grep "jdk/bin/java" | grep -v "usr/bin/time" | grep -v "grep" > "$OUTPUT_FILE" &
     PID_TOP="$!"
     /usr/bin/time -f "\n%E,%S,%U" -ao "$OUTPUT_FILE" "$JAVA" -cp "$CLASSPATH" "$TEST_PROGRAM"
     kill "$PID_TOP"
@@ -98,7 +98,7 @@ test_openjdk() {
 
 test_graalvm() {
     OUTPUT_FILE="/tmp/GraalVM_$1"
-    top -b | grep "./$TEST_PROGRAM" | grep -v grep > "$OUTPUT_FILE" &
+    top -b | grep "./$TEST_PROGRAM" | grep -v "usr/bin/time" | grep -v "grep" > "$OUTPUT_FILE" &
     PID_TOP="$!"
     /usr/bin/time -f "\n%E,%S,%U" -ao "$OUTPUT_FILE" "./$TEST_PROGRAM" -XX:+FlightRecorder
     kill "$PID_TOP"
