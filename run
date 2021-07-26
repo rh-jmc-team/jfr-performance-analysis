@@ -31,13 +31,13 @@ cd build
 rm -rf results
 mkdir results
 
-export OPENJDK_CPU="$(pwd)/results/OpenJDK_CPU"
-export OPENJDK_RES="$(pwd)/results/OpenJDK_RES"
-export OPENJDK_TIME="$(pwd)/results/OpenJDK_TIME"
-export GRAALVM_CPU="$(pwd)/results/GraalVM_CPU"
-export GRAALVM_RES="$(pwd)/results/GraalVM_RES"
-export GRAALVM_TIME="$(pwd)/results/GraalVM_TIME"
-export GRAALVM_SIZE="$(pwd)/results/GraalVM_SIZE"
+export OPENJDK_CPU="$(pwd)/results/OpenJDK_CPU.csv"
+export OPENJDK_RES="$(pwd)/results/OpenJDK_RES.csv"
+export OPENJDK_TIME="$(pwd)/results/OpenJDK_TIME.csv"
+export GRAALVM_CPU="$(pwd)/results/GraalVM_CPU.csv"
+export GRAALVM_RES="$(pwd)/results/GraalVM_RES.csv"
+export GRAALVM_TIME="$(pwd)/results/GraalVM_TIME.csv"
+export GRAALVM_SIZE="$(pwd)/results/GraalVM_SIZE.csv"
 touch "$OPENJDK_CPU"
 touch "$OPENJDK_RES"
 touch "$OPENJDK_TIME"
