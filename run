@@ -90,7 +90,7 @@ test_openjdk() {
     top -b | grep "jdk/bin/java" | grep -v "usr/bin/time" | grep -v "grep" > "$OUTPUT_FILE" &
     sleep 0.5
     LAST_GREP=$!
-    /usr/bin/time -f "%E,%S,%U" -o "/tmp/time" "$JAVA" -cp "$CLASSPATH" "$TEST_PROGRAM"
+    /usr/bin/time -f "%e,%S,%U" -o "/tmp/time" "$JAVA" -cp "$CLASSPATH" "$TEST_PROGRAM"
     killall top
     wait $LAST_GREP
     cat "/tmp/time" >> "$OUTPUT_FILE"
@@ -105,7 +105,7 @@ test_graalvm() {
     top -b | grep "./$TEST_PROGRAM" | grep -v "usr/bin/time" | grep -v "grep" > "$OUTPUT_FILE" &
     sleep 0.5
     LAST_GREP=$!
-    /usr/bin/time -f "%E,%S,%U" -o "/tmp/time" "./$TEST_PROGRAM" -XX:+FlightRecorder
+    /usr/bin/time -f "%e,%S,%U" -o "/tmp/time" "./$TEST_PROGRAM" -XX:+FlightRecorder
     killall top
     wait $LAST_GREP
     cat "/tmp/time" >> "$OUTPUT_FILE"
