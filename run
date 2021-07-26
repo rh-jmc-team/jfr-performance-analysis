@@ -28,6 +28,7 @@ cp toprc ~/.config/procps
 rm -rf build
 mkdir build
 cd build
+rm -rf results
 mkdir results
 
 export OPENJDK_CPU="$(pwd)/results/OpenJDK_CPU"
@@ -159,5 +160,5 @@ for i in {1..100}; do
 done
 
 for i in {1..100}; do
-    parse_graalvm /tmp/OpenJDK_$i
+    parse_graalvm /tmp/GraalVM_$i
 done
