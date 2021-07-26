@@ -131,11 +131,10 @@ done
 
 parse_openjdk() {
     OUTPUT_FILE=$1
-    INTERMEDIATE="$OUTPUT_FILE"_INTERMEDIATE
+    INTERMEDIATE="${OUTPUT_FILE}_INTERMEDIATE"
     tail -n 1 "$OUTPUT_FILE" >> "$OPENJDK_TIME"
-    awk 'NF>=3 {print $(NF-1), $NF}' "$OUTPUT_FILE" > "$INTERMEDIATE"
-    # The last line top outputs is always incomplete for some reason, so we filter for the CPU and memory usage format
-    awk -i inplace '/^[0-9]+(\.[0-9]+)? [0-9]+(\.[0-9]+)?$/ {print $0}' "$INTERMEDIATE"
+    head -n -1 "$OUTPUT_FILE" > "$INTERMEDIATE"
+    awk -i inplace '{print $(NF-1), $NF}' "$INTERMEDIATE"
     awk '{printf "%s,", $1}' "$INTERMEDIATE" | awk '{print substr($0, 1, length($0)-1)}' >> "$OPENJDK_CPU"
     awk '{printf "%s,", $2}' "$INTERMEDIATE" | awk '{print substr($0, 1, length($0)-1)}' >> "$OPENJDK_RES"
 }
@@ -145,11 +144,10 @@ parse_openjdk() {
 
 parse_graalvm() {
     OUTPUT_FILE=$1
-    INTERMEDIATE="$OUTPUT_FILE"_INTERMEDIATE
+    INTERMEDIATE="${OUTPUT_FILE}_INTERMEDIATE"
     tail -n 1 "$OUTPUT_FILE" >> "$GRAALVM_TIME"
-    awk 'NF>=3 {print $(NF-1), $NF}' "$OUTPUT_FILE" > "$INTERMEDIATE"
-    # The last line top outputs is always incomplete for some reason, so we filter for the CPU and memory usage format
-    awk -i inplace '/^[0-9]+(\.[0-9]+)? [0-9]+(\.[0-9]+)?$/ {print $0}' "$INTERMEDIATE"
+    head -n -1 "$OUTPUT_FILE" > "$INTERMEDIATE"
+    awk -i inplace '{print $(NF-1), $NF}' "$INTERMEDIATE"
     awk '{printf "%s,", $1}' "$INTERMEDIATE" | awk '{print substr($0, 1, length($0)-1)}' >> "$GRAALVM_CPU"
     awk '{printf "%s,", $2}' "$INTERMEDIATE" | awk '{print substr($0, 1, length($0)-1)}' >> "$GRAALVM_RES"
 }
