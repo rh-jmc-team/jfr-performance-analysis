@@ -87,9 +87,9 @@ ls -l | grep " $TEST_PROGRAM\$" | awk '{print $5;}' > "$GRAALVM_SIZE"
 
 test_openjdk() {
     OUTPUT_FILE="/tmp/OpenJDK_$1"
-    top -b | grep "jdk/bin/java" | grep -v "usr/bin/time" | grep -v "grep" > "$OUTPUT_FILE" &
+    top -b | grep "openjdk/bin/java" | grep -v "usr/bin/time" | grep -v "grep" > "$OUTPUT_FILE" &
     sleep 0.5
-    LAST_GREP=$!
+    LAST_GREP="$!"
     /usr/bin/time -f "%e,%S,%U" -o "/tmp/time" "$JAVA" -cp "$CLASSPATH" "$TEST_PROGRAM"
     killall top
     wait $LAST_GREP
@@ -104,7 +104,7 @@ test_graalvm() {
     OUTPUT_FILE="/tmp/GraalVM_$1"
     top -b | grep "./$TEST_PROGRAM" | grep -v "usr/bin/time" | grep -v "grep" > "$OUTPUT_FILE" &
     sleep 0.5
-    LAST_GREP=$!
+    LAST_GREP="$!"
     /usr/bin/time -f "%e,%S,%U" -o "/tmp/time" "./$TEST_PROGRAM" -XX:+FlightRecorder
     killall top
     wait $LAST_GREP
@@ -113,7 +113,7 @@ test_graalvm() {
 
 
 # Run the tests
-# Remove recordings aftere, to save space
+# Remove recordings after, to save space
 
 for i in {1..100}; do
     test_openjdk $i
@@ -130,7 +130,7 @@ done
 # $1 = individual test output file
 
 parse_openjdk() {
-    OUTPUT_FILE=$1
+    OUTPUT_FILE="$1"
     INTERMEDIATE="${OUTPUT_FILE}_INTERMEDIATE"
     tail -n 1 "$OUTPUT_FILE" >> "$OPENJDK_TIME"
     head -n -1 "$OUTPUT_FILE" > "$INTERMEDIATE"
@@ -143,7 +143,7 @@ parse_openjdk() {
 # $1 = individual test output file
 
 parse_graalvm() {
-    OUTPUT_FILE=$1
+    OUTPUT_FILE="$1"
     INTERMEDIATE="${OUTPUT_FILE}_INTERMEDIATE"
     tail -n 1 "$OUTPUT_FILE" >> "$GRAALVM_TIME"
     head -n -1 "$OUTPUT_FILE" > "$INTERMEDIATE"
