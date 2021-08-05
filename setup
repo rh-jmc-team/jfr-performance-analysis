@@ -1,6 +1,6 @@
 #!/bin/bash
 
-BUILD_DIR="build"
+BUILD_DIR="$(pwd)/build"
 
 print_help() {
     echo help
