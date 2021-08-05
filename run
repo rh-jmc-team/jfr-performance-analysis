@@ -11,24 +11,25 @@ print_help() {
 # Variables
 
 BUILD_DIR="$(pwd)/build"
+mkdir -p "$BUILD_DIR"
 
-if [[ -z "$0" ]]; then
+if [[ -z "$1" ]]; then
     echo "Test program must be specified."
     print_help
     exit 1
 fi
-TEST_PROGRAM="$0"
+TEST_PROGRAM="$1"
 
-if [[ -z GRAALVM_HOME ]]; then
-    GRAALVM_HOME="$BUILD"/graalvm
+if [[ -z $GRAALVM_HOME ]]; then
+    GRAALVM_HOME="$BUILD_DIR"/graalvm
 fi
 
-if [[ -z JAVA_HOME ]]; then
-    JAVA_HOME="$BUILD"/openjdk
+if [[ -z $JAVA_HOME ]]; then
+    JAVA_HOME="$BUILD_DIR"/openjdk
 fi
 
-if [[ -z JFR_TESTS ]]; then
-    JFR_TESTS="$BUILD"/jfr-tests
+if [[ -z $JFR_TESTS ]]; then
+    JFR_TESTS="$BUILD_DIR"/jfr-tests
 fi
 
 JAVAC="$JAVA_HOME/bin/javac"
@@ -49,6 +50,8 @@ done
 
 # Output files
 
+rm -rf results
+mkdir -p results
 OPENJDK_CPU="$(pwd)/results/OpenJDK_CPU.csv"
 OPENJDK_RES="$(pwd)/results/OpenJDK_RES.csv"
 OPENJDK_TIME="$(pwd)/results/OpenJDK_TIME.csv"
@@ -76,9 +79,10 @@ cd -
 
 # Build the native image
 
+mkdir -p "$BUILD_DIR"
 "$GRAALVM_HOME"/bin/gu install native-image
-"$GRAALVM_HOME"/bin/native-image -H:+AllowVMInspection -cp "$CLASSPATH" "$TEST_PROGRAM" "$TEST_PROGRAM"
-ls -l | grep " $TEST_PROGRAM\$" | awk '{print $5;}' > "$GRAALVM_SIZE"
+"$GRAALVM_HOME"/bin/native-image -H:+AllowVMInspection -cp "$CLASSPATH" "$TEST_PROGRAM" "$BUILD_DIR"/"$TEST_PROGRAM"
+ls -l "$BUILD_DIR" | grep " $TEST_PROGRAM\$" | awk '{print $5;}' > "$GRAALVM_SIZE"
 
 
 # Function for running a GraalVM test
@@ -86,10 +90,10 @@ ls -l | grep " $TEST_PROGRAM\$" | awk '{print $5;}' > "$GRAALVM_SIZE"
 
 test_graalvm() {
     OUTPUT_FILE="/tmp/GraalVM_$1"
-    top -b | grep "./$TEST_PROGRAM" | grep -v "usr/bin/time" | grep -v "grep" > "$OUTPUT_FILE" &
+    top -b | grep "$TEST_PROGRAM" | grep -v "usr/bin/time" | grep -v "grep" > "$OUTPUT_FILE" &
     sleep 0.5
     LAST_GREP="$!"
-    /usr/bin/time -f "%e,%S,%U" -o "/tmp/time" "./$TEST_PROGRAM" -XX:+FlightRecorder
+    /usr/bin/time -f "%e,%S,%U" -o "/tmp/time" "$BUILD_DIR"/"$TEST_PROGRAM" -XX:+FlightRecorder
     killall top
     wait $LAST_GREP
     cat "/tmp/time" >> "$OUTPUT_FILE"
@@ -114,12 +118,12 @@ test_openjdk() {
 # Run the tests
 # Remove recordings after, to save space
 
-for i in {1.."$RUNS"}; do
+for i in $(seq 1 "$RUNS"); do
     test_graalvm $i
     rm /tmp/*.jfr
 done
 
-for i in {1.."$RUNS"}; do
+for i in $(seq 1 "$RUNS"); do
     test_openjdk $i
     rm /tmp/*.jfr
 done
@@ -155,10 +159,10 @@ parse_graalvm() {
 
 # parse all the individual test results
 
-for i in {1.."$RUNS"}; do
+for i in $(seq 1 "$RUNS"); do
     parse_openjdk /tmp/OpenJDK_$i
 done
 
-for i in {1.."$RUNS"}; do
+for i in $(seq 1 "$RUNS"); do
     parse_graalvm /tmp/GraalVM_$i
 done
