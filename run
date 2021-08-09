@@ -4,8 +4,33 @@
 # Help
 
 print_help() {
-    echo help
+    cat << EOF
+Usage: sh run [OPTIONS] PROGRAM
+Do a performance analysis.
+
+Options:
+  -h print help
+  -n RUNS set the number of test runs
+
+Optional environment variables:
+  GRAALVM_HOME the path to a build of GraalVM
+  JAVA_HOME the path to a build of OpenJDK
+  JFR_TESTS the path to a jfr-tests Git repository
+EOF
 }
+
+
+# Options parsing
+
+RUNS=100
+
+while getopts "hn:" opt; do
+    case "$opt" in
+        h) print_help
+            exit 0;;
+        n) RUNS="$OPTARG";;
+    esac
+done
 
 
 # Variables
@@ -53,18 +78,7 @@ fi
 
 JAVAC="$JAVA_HOME/bin/javac"
 JAVA="$JAVA_HOME/bin/java"
-RUNS=100
 
-
-# Options parsing
-
-while getopts "hn:" opt; do
-    case "$opt" in
-        h) print_help
-            exit 0;;
-        n) RUNS="$OPTARG"
-    esac
-done
 
 
 # Output files

@@ -3,7 +3,26 @@
 BUILD_DIR="$(pwd)/build"
 
 print_help() {
-    echo help
+    cat << EOF
+Usage: sh setup [OPTIONS]
+Perform setup tasks.
+
+Task-specifying options:
+  -a perform all setup tasks
+  -d install dependencies
+  -g get GraalVM
+  -j get jfr-tests
+  -o get OpenJDK
+  -t set toprc
+
+Non-task-specifying options:
+  -h print help
+
+Optional environment variables:
+  GRAALVM_URL the URL from which to download a prebuilt GraalVM
+  OPENJDK_URL the URL from which to download a prebuilt OpenJDK
+  JFR_TESTS_URL the URL with which to clone a jfr-tests Git repository
+EOF
 }
 
 install_dependencies() {
