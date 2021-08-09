@@ -24,13 +24,32 @@ if [[ -z $GRAALVM_HOME ]]; then
     GRAALVM_HOME="$BUILD_DIR"/graalvm
 fi
 
+if [[ ! -d $GRAALVM_HOME ]]; then
+    echo "GRAALVM_HOME not found."
+    print_help
+    exit 1
+fi
+
 if [[ -z $JAVA_HOME ]]; then
     JAVA_HOME="$BUILD_DIR"/openjdk
+fi
+
+if [[ ! -d $JAVA_HOME ]]; then
+    echo "JAVA_HOME not found."
+    print_help
+    exit 1
 fi
 
 if [[ -z $JFR_TESTS ]]; then
     JFR_TESTS="$BUILD_DIR"/jfr-tests
 fi
+
+if [[ ! -d $JFR_TESTS ]]; then
+    echo "JFR_TESTS not found."
+    print_help
+    exit 1
+fi
+
 
 JAVAC="$JAVA_HOME/bin/javac"
 JAVA="$JAVA_HOME/bin/java"
