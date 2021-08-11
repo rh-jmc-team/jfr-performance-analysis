@@ -1,0 +1,92 @@
+#!/bin/bash
+
+BUILD_DIR="$(pwd)/build"
+
+print_help() {
+    cat << EOF
+Usage: sh setup [OPTIONS]
+Perform setup tasks.
+
+Task-specifying options:
+  -a perform all setup tasks
+  -d install dependencies
+  -g get GraalVM
+  -j get jfr-tests
+  -o get OpenJDK
+  -t set toprc
+
+Non-task-specifying options:
+  -h print help
+
+Optional environment variables:
+  GRAALVM_URL the URL from which to download a prebuilt GraalVM
+  OPENJDK_URL the URL from which to download a prebuilt OpenJDK
+  JFR_TESTS_URL the URL with which to clone a jfr-tests Git repository
+EOF
+}
+
+install_dependencies() {
+    dnf -y install git tar maven gcc glibc-devel zlib-devel time
+}
+
+get_graalvm() {
+    if [[ -z "$GRAALVM_URL" ]]; then
+        GRAALVM_URL="https://github.com/graalvm/graalvm-ce-dev-builds/releases/latest/download/graalvm-ce-java11-linux-amd64-dev.tar.gz"
+    fi
+
+    rm -rf "$BUILD_DIR"/graalvm*
+    mkdir -p "$BUILD_DIR"/graalvm
+    cd "$BUILD_DIR"
+
+    curl -sL "$GRAALVM_URL" -o graalvm.tar.gz
+    tar xf graalvm.tar.gz -C graalvm --strip-components=1
+    cd -
+}
+
+get_openjdk() {
+    if [[ -z "$OPENJDK_URL" ]]; then
+        OPENJDK_URL="https://github.com/AdoptOpenJDK/openjdk11-upstream-binaries/releases/download/jdk-11.0.12%2B7/OpenJDK11U-jdk_x64_linux_11.0.12_7.tar.gz"
+    fi
+
+    rm -rf "$BUILD_DIR"/openjdk*
+    mkdir -p "$BUILD_DIR"/openjdk
+    cd "$BUILD_DIR"
+
+    curl -sL "$OPENJDK_URL" -o openjdk.tar.gz
+    tar xf openjdk.tar.gz -C openjdk --strip-components=1
+    cd -
+}
+
+get_jfr_tests() {
+    if [[ -z "$JFR_TESTS_URL" ]]; then
+        JFR_TESTS_URL="https://github.com/rh-jmc-team/jfr-tests.git"
+    fi
+    rm -rf "$BUILD_DIR"/jfr-tests*
+    mkdir -p "$BUILD_DIR"
+    cd "$BUILD_DIR"
+    git clone $JFR_TESTS_URL
+    cd -
+}
+
+set_toprc() {
+    mkdir -p ~/.config/procps
+    cp toprc ~/.config/procps
+}
+
+while getopts "hadgojt" opt; do
+    case "$opt" in 
+        h) print_help
+            exit 0;;
+        a) install_dependencies
+            get_graalvm
+            get_openjdk
+            get_jfr_tests
+            set_toprc
+            break;;
+        d) install_dependencies;;
+        g) get_graalvm;;
+        o) get_openjdk;;
+        j) get_jfr_tests;;
+        t) set_toprc;;
+    esac
+done
