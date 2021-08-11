@@ -74,7 +74,7 @@ set_toprc() {
 }
 
 while getopts "hadgojt" opt; do
-    case "$opt" in 
+    case "$opt" in
         h) print_help
             exit 0;;
         a) install_dependencies

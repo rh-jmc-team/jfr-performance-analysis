@@ -31,6 +31,7 @@ while getopts "hn:" opt; do
         n) RUNS="$OPTARG";;
     esac
 done
+shift "$((OPTIND-1))"
 
 
 # Variables
@@ -40,6 +41,7 @@ mkdir -p "$BUILD_DIR"
 
 if [[ -z "$1" ]]; then
     echo "Test program must be specified."
+    echo
     print_help
     exit 1
 fi
@@ -51,6 +53,7 @@ fi
 
 if [[ ! -d $GRAALVM_HOME ]]; then
     echo "GRAALVM_HOME not found."
+    echo
     print_help
     exit 1
 fi
@@ -61,6 +64,7 @@ fi
 
 if [[ ! -d $JAVA_HOME ]]; then
     echo "JAVA_HOME not found."
+    echo
     print_help
     exit 1
 fi
@@ -71,6 +75,7 @@ fi
 
 if [[ ! -d $JFR_TESTS ]]; then
     echo "JFR_TESTS not found."
+    echo
     print_help
     exit 1
 fi
@@ -149,31 +154,13 @@ test_openjdk() {
 
 
 # Run the tests
-# Remove recordings after, to save space
+# Remove recordings after to save space
 
 for i in $(seq 1 "$RUNS"); do
     test_graalvm $i
-    rm /tmp/*.jfr
-done
-
-for i in $(seq 1 "$RUNS"); do
     test_openjdk $i
     rm /tmp/*.jfr
 done
-
-
-# Function for parsing the individual OpenJDK output files and writing them to the final output files
-# $1 = path to the individual test output file
-
-parse_openjdk() {
-    OUTPUT_FILE="$1"
-    INTERMEDIATE="$OUTPUT_FILE"_INTERMEDIATE
-    tail -n 1 "$OUTPUT_FILE" >> "$OPENJDK_TIME"
-    head -n -1 "$OUTPUT_FILE" > "$INTERMEDIATE"
-    awk -i inplace '{print $(NF-1), $NF}' "$INTERMEDIATE"
-    awk '{printf "%s,", $1}' "$INTERMEDIATE" | awk '{print substr($0, 1, length($0)-1)}' >> "$OPENJDK_CPU"
-    awk '{printf "%s,", $2}' "$INTERMEDIATE" | awk '{print substr($0, 1, length($0)-1)}' >> "$OPENJDK_RES"
-}
 
 
 # Function for parsing the individual GraalVM output files and writing them to the final output files
@@ -190,12 +177,23 @@ parse_graalvm() {
 }
 
 
+# Function for parsing the individual OpenJDK output files and writing them to the final output files
+# $1 = path to the individual test output file
+
+parse_openjdk() {
+    OUTPUT_FILE="$1"
+    INTERMEDIATE="$OUTPUT_FILE"_INTERMEDIATE
+    tail -n 1 "$OUTPUT_FILE" >> "$OPENJDK_TIME"
+    head -n -1 "$OUTPUT_FILE" > "$INTERMEDIATE"
+    awk -i inplace '{print $(NF-1), $NF}' "$INTERMEDIATE"
+    awk '{printf "%s,", $1}' "$INTERMEDIATE" | awk '{print substr($0, 1, length($0)-1)}' >> "$OPENJDK_CPU"
+    awk '{printf "%s,", $2}' "$INTERMEDIATE" | awk '{print substr($0, 1, length($0)-1)}' >> "$OPENJDK_RES"
+}
+
+
 # parse all the individual test results
 
 for i in $(seq 1 "$RUNS"); do
-    parse_openjdk /tmp/OpenJDK_$i
-done
-
-for i in $(seq 1 "$RUNS"); do
     parse_graalvm /tmp/GraalVM_$i
+    parse_openjdk /tmp/OpenJDK_$i
 done
