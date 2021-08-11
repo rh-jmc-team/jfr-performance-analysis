@@ -109,8 +109,10 @@ touch "$GRAALVM_SIZE"
 # Compile jfr-tests
 
 cd "$JFR_TESTS"
+cp pom.xml /tmp/jfr-tests-pom.xml
 sed -i "s:<executable>.*</executable>:<executable>$JAVAC</executable>:" pom.xml
 mvn clean compile
+cp /tmp/jfr-tests-pom.xml pom.xml
 CLASSPATH="$(pwd)/target/classes"
 cd -
 
