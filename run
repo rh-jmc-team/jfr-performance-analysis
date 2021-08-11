@@ -6,7 +6,7 @@
 print_help() {
     cat << EOF
 Usage: sh run [OPTIONS] PROGRAM
-Do a performance analysis.
+Run a performance analysis.
 
 Options:
   -h print help

@@ -11,8 +11,8 @@ Task-specifying options:
   -a perform all setup tasks
   -d install dependencies
   -g get GraalVM
-  -j get jfr-tests
   -o get OpenJDK
+  -j get jfr-tests
   -t set toprc
 
 Non-task-specifying options:
